@@ -1,0 +1,72 @@
+**Revised Arch USB Install Guide (BTRFS, Persistent)**
+
+### Requirements
+- 2 USB drives: Installer + target.
+- Latest Arch ISO.
+
+### Step 1: Boot Installer
+Flash ISO to first USB (Rufus DD or dd). Boot it. Connect internet (`iwctl` for WiFi).
+
+### Step 2: Partition Target USB (/dev/sdX)
+```bash
+fdisk /dev/sdX
+```
+- EFI: 512M, type EF (g)
+- Root: rest, type 83 (Linux)
+
+Format:
+```bash
+mkfs.fat -F32 /dev/sdX1
+mkfs.btrfs -f -L archroot /dev/sdX2
+```
+
+### Step 3: Install Base
+```bash
+mount /dev/sdX2 /mnt
+mount --mkdir /dev/sdX1 /mnt/boot
+pacstrap -K /mnt base base-devel linux linux-firmware btrfs-progs nano grub efibootmgr networkmanager
+genfstab -U /mnt >> /mnt/etc/fstab
+```
+
+### Step 4: Chroot & Configure
+```bash
+arch-chroot /mnt
+```
+
+Inside:
+- `ln -sf /usr/share/zoneinfo/Region/City /etc/localtime`
+- `hwclock --systohc`
+- Edit `/etc/locale.gen` (uncomment en_US.UTF-8), `locale-gen`
+- `echo "archusb" > /etc/hostname`
+- `passwd` (root)
+- Create user: `useradd -m -G wheel youruser; passwd youruser; EDITOR=nano visudo`
+
+GRUB:
+```bash
+grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=GRUB --removable
+grub-mkconfig -o /boot/grub/grub.cfg
+```
+
+Enable: `systemctl enable NetworkManager`
+
+**BTRFS fstab** (edit `/etc/fstab`):
+```
+UUID=... / btrfs defaults,noatime,compress=zstd,commit=60 0 1
+UUID=... /boot vfat defaults,noatime 0 2
+tmpfs /var/log tmpfs defaults,noatime,mode=0755,size=100M 0 0
+tmpfs /var/tmp tmpfs defaults,noatime,size=500M 0 0
+```
+
+Exit chroot, `umount -R /mnt`, reboot.
+
+### Optimizations (Apply Post-Install)
+| Area | Config |
+|------|--------|
+| Scheduler | udev rule for bfq on USB |
+| Journal | `/etc/systemd/journald.conf`: Storage=volatile, RuntimeMaxUse=30M |
+| Swap | Use zram (`pacman -S zram-generator`) |
+| Browser | profile-sync-daemon or /tmp cache |
+
+**BTRFS perks**: Snapshots via `btrfs subvolume snapshot`. Low wear via noatime/compress.
+
+Done. Portable, persistent, optimized.

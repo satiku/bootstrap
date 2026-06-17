@@ -1,0 +1,56 @@
+```
+sudo pacman -S zram-generator 
+
+sudo reboot
+```
+
+
+
+```
+sudo pacman -S virtualbox-guest-utils
+
+sudo systemctl enable --now vboxservice
+
+sudo reboot
+```
+
+
+
+```
+sudo pacman -S xorg-server xorg-xinit i3-wm i3status i3blocks i3lock dmenu alacritty yazi ueberzugpp qutebrowser 
+
+cp /etc/X11/xinit/xinitrc ~/.xinitrc
+echo "exec i3" >> ~/.xinitrc
+```
+
+Comment out exec xterm line 
+
+```
+startx
+```
+
+
+
+
+btop
+
+yadm
+
+
+
+
+tmux 
+mpv
+nsxiv
+timg
+ncdu
+
+
+
+
+neomutt
+aerc
+
+
+obsidian in vim mode
+
