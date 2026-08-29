@@ -34,6 +34,10 @@ startx
 
 btop
 
+mpv
+poppler
+p7zip
+
 yadm
 
 
