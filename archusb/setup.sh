@@ -5,8 +5,12 @@
 packages=(
 	neovim
 	qutebrowser
+	mpv
+	btop
 	yazi
-	ueberzugpp
+	ueberzugpp    # yazi 
+	poppler       # yazi 
+	p7zip         # yazi
 )
 
 
