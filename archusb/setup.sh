@@ -44,3 +44,40 @@ for pkg in "${packages[@]}"; do
 	fi
 done 
 
+
+
+
+echo ""
+echo "#############################"
+echo "Check temp mounts"
+echo "#############################"
+echo ""
+
+
+if grep -q 'tmpfs                    /var/log' /etc/fstab ;then
+	echo "/var/log in fstab";
+else
+	echo "adding to file";
+fi
+
+
+if grep -q 'tmpfs                    /var/tmp' /etc/fstab ;then
+	echo "/var/tmp in fstab";
+else
+	echo "adding to file";
+fi
+
+
+if grep -q 'tmpfs                    /tmp' /etc/fstab ;then
+	echo "/tmp in fstab";
+else
+	echo "adding to file";
+fi
+
+
+if grep -q 'tmpfs                    /var/cache/pacman/pkg' /etc/fstab ;then
+	echo "/var/cache/pacman/pkg in fstab";
+else
+	echo "adding to file";
+fi
+
