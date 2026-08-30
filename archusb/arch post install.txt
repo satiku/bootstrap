@@ -41,6 +41,18 @@ p7zip
 yadm
 
 
+syncthing
+tailscale
+keepassxc
+
+
+
+
+
+
+
+
+
 
 
 tmux 
