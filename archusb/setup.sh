@@ -10,6 +10,7 @@ packages=(
 	i3blocks
 	i3lock
 	dmenu
+	picom
 	alacritty     # terminal emulator
 	neovim        # text editor
 	qutebrowser   # web browser
