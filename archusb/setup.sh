@@ -1,6 +1,6 @@
 #!/bin/bash
 
-
+dotfile="yadm clone git@github.com:satiku/dotfiles.git"
 
 packages=(
 	xorg-server
@@ -19,7 +19,38 @@ packages=(
 	ueberzugpp    # yazi 
 	poppler       # yazi 
 	p7zip         # yazi
+	ntfs-3g       # ntfs fs compatibility
+	exfat-utils   # exfat fs compatibility
 )
+
+
+fstab=(
+	"tmpfs                    /var/log"
+	"tmpfs                    /var/tmp"
+	"tmpfs                    /tmp"
+	"tmpfs                    /var/cache/pacman/pkg"
+)
+
+
+
+
+blue(){
+	echo -e "\033[0;34mPASS:\033[0m $1"
+}
+
+pass(){
+	echo -e "\033[0;32mPASS:\033[0m $1"
+}
+
+fail(){
+	echo -e "\033[0;31mFAIL:\033[0m $1"
+}
+
+
+
+cd ~
+
+pwd 
 
 
 echo ""
@@ -36,12 +67,16 @@ echo "INSTALL PACKAGES"
 echo "#############################"
 echo ""
 
+
+
 for pkg in "${packages[@]}"; do 
-	if ! sudo pacman -S --noconfirm  --needed "$pkg"; then 
-		echo "FAIL: $pkg"
+	if sudo pacman -Q "$pkg" &>/dev/null; then 
+		blue $pkg
+	elif ! sudo pacman -S --noconfirm  --needed "$pkg" >/dev/null; then 
+		fail $pkg
 	else
-		echo "OK: $pkg"
-	fi
+		pass $pkg
+	fi	
 done 
 
 
@@ -54,30 +89,44 @@ echo "#############################"
 echo ""
 
 
-if grep -q 'tmpfs                    /var/log' /etc/fstab ;then
-	echo "/var/log in fstab";
+for line in "${fstab[@]}"; do 
+	path=($line)
+
+	if grep -q "$line" /etc/fstab ;then
+		blue ${path[1]}
+	else
+		echo "adding to file";
+	fi
+done
+
+
+
+echo ""
+echo "#############################"
+echo "Check dot files"
+echo "#############################"
+echo ""
+
+
+if [ -d ~/.local/share/yadm/repo.git ];then 
+	blue "yadm repo exists"
+
 else
-	echo "adding to file";
+	yadm clone $dotfile
 fi
 
 
-if grep -q 'tmpfs                    /var/tmp' /etc/fstab ;then
-	echo "/var/tmp in fstab";
-else
-	echo "adding to file";
+
+yadm fetch 
+
+if [ "$(yadm rev-list HEAD..@{u} --count)" -gt 0 ] ;then 
+	if yadm pull ; then 
+		pass "yadm repo updated"
+	fi
+else 
+	blue "yadm repo current"
 fi
 
 
-if grep -q 'tmpfs                    /tmp' /etc/fstab ;then
-	echo "/tmp in fstab";
-else
-	echo "adding to file";
-fi
 
-
-if grep -q 'tmpfs                    /var/cache/pacman/pkg' /etc/fstab ;then
-	echo "/var/cache/pacman/pkg in fstab";
-else
-	echo "adding to file";
-fi
 
