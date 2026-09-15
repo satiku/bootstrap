@@ -77,7 +77,8 @@ for pkg in "${packages[@]}"; do
 		fail $pkg
 	else
 		pass $pkg
-	fi	done 
+	fi
+	done 
 
 
 
