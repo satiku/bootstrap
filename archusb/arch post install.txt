@@ -60,7 +60,7 @@ mpv
 nsxiv
 timg
 ncdu
-
+zathura
 
 
 
