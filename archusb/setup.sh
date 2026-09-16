@@ -23,6 +23,7 @@ packages=(
 	p7zip         # yazi
 	ntfs-3g       # ntfs fs compatibility
 	exfat-utils   # exfat fs compatibility
+	zsh           # default shell
 )
 
 
@@ -107,10 +108,31 @@ for pkg in "${packages[@]}"; do
 		fail $pkg
 	else
 		pass $pkg
-	fi	
-done 
+	fi
+	done 
 
 
+
+
+echo ""
+echo "#############################"
+echo "SET DEFAULT SHELL"
+echo "#############################"
+echo ""
+
+zsh_path="$(command -v zsh)"
+if [ -n "$zsh_path" ]; then
+	current_shell="$(getent passwd "$USER" | cut -d: -f7)"
+	if [ "$current_shell" = "$zsh_path" ]; then
+		blue "default shell already zsh"
+	elif chsh -s "$zsh_path"; then
+		pass "default shell set to zsh"
+	else
+		fail "could not set default shell to zsh"
+	fi
+else
+	fail "zsh not found"
+fi
 
 
 echo ""
@@ -161,7 +183,6 @@ fi
 
 
 
-
 # Install AUR YAY 
 
 header "Install AUR"
@@ -176,5 +197,5 @@ if ! yay &> /dev/null ; then
 	fi
 else 
 	blue "Install yay"
+  
 fi
-
