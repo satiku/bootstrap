@@ -184,19 +184,20 @@ fi
 
 
 
-# Install AUR YAY 
+# Install AUR helper (yay-bin avoids Go compile / connection refused)
 
 header "Install AUR"
 
-if ! yay &> /dev/null ; then 
-
-	if ! ` sudo pacman -S  --noconfirm --needed base-devel git go &> /dev/null && git clone https://aur.archlinux.org/yay.git && cd yay && makepkg -si ` ; then 
-		fail "Install yay"
-	else
-	
+if command -v yay &>/dev/null; then
+	blue "yay"
+else
+	yay_build="$(mktemp -d)"
+	if sudo pacman -S --noconfirm --needed base-devel git &>/dev/null \
+		&& git clone --depth 1 https://aur.archlinux.org/yay-bin.git "$yay_build" \
+		&& (cd "$yay_build" && makepkg -si --noconfirm); then
 		pass "Install yay"
+	else
+		fail "Install yay"
 	fi
-else 
-	blue "Install yay"
-  
+	rm -rf "$yay_build"
 fi
