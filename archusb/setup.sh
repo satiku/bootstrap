@@ -1,6 +1,6 @@
 #!/bin/bash
 
-dotfile="yadm clone git@github.com:satiku/dotfiles.git"
+dotfile="git@github.com:satiku/dotfiles.git"
 
 packages=(
 	xorg-server
@@ -25,6 +25,7 @@ packages=(
 	exfat-utils   # exfat fs compatibility
 	zsh           # default shell
 	unclutter     # hide idle mouse cursor
+	yadm          # dotfile manager
 )
 
 
@@ -96,7 +97,7 @@ fi
 
 
 #
-# Update Repos 
+# Install packages
 #
 
 header "INSTALL PACKAGES"
@@ -115,11 +116,28 @@ for pkg in "${packages[@]}"; do
 
 
 
-echo ""
-echo "#############################"
-echo "SET DEFAULT SHELL"
-echo "#############################"
-echo ""
+# Install AUR helper before later steps that may need it (yay-bin avoids Go compile)
+
+header "Install AUR"
+
+if command -v yay &>/dev/null; then
+	blue "yay"
+else
+	yay_build="$(mktemp -d)"
+	if sudo pacman -S --noconfirm --needed base-devel git &>/dev/null \
+		&& git clone --depth 1 https://aur.archlinux.org/yay-bin.git "$yay_build" \
+		&& (cd "$yay_build" && makepkg -si --noconfirm); then
+		pass "Install yay"
+	else
+		fail "Install yay"
+	fi
+	rm -rf "$yay_build"
+fi
+
+
+
+
+header "SET DEFAULT SHELL"
 
 zsh_path="$(command -v zsh)"
 if [ -n "$zsh_path" ]; then
@@ -136,12 +154,7 @@ else
 fi
 
 
-echo ""
-echo "#############################"
-echo "Check temp mounts"
-echo "#############################"
-echo ""
-
+header "Check temp mounts"
 
 for line in "${fstab[@]}"; do 
 	path=($line)
@@ -154,19 +167,13 @@ for line in "${fstab[@]}"; do
 done
 
 
-
-echo ""
-echo "#############################"
-echo "Check dot files"
-echo "#############################"
-echo ""
-
+header "Check dot files"
 
 if [ -d ~/.local/share/yadm/repo.git ];then 
 	blue "yadm repo exists"
 
 else
-	yadm clone $dotfile
+	yadm clone "$dotfile"
 fi
 
 
@@ -179,25 +186,4 @@ if [ "$(yadm rev-list HEAD..@{u} --count)" -gt 0 ] ;then
 	fi
 else 
 	blue "yadm repo current"
-fi
-
-
-
-
-# Install AUR helper (yay-bin avoids Go compile / connection refused)
-
-header "Install AUR"
-
-if command -v yay &>/dev/null; then
-	blue "yay"
-else
-	yay_build="$(mktemp -d)"
-	if sudo pacman -S --noconfirm --needed base-devel git &>/dev/null \
-		&& git clone --depth 1 https://aur.archlinux.org/yay-bin.git "$yay_build" \
-		&& (cd "$yay_build" && makepkg -si --noconfirm); then
-		pass "Install yay"
-	else
-		fail "Install yay"
-	fi
-	rm -rf "$yay_build"
 fi
