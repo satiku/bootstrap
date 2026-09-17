@@ -29,10 +29,10 @@ packages=(
 
 
 fstab=(
-	"tmpfs                    /var/log"
-	"tmpfs                    /var/tmp"
-	"tmpfs                    /tmp"
-	"tmpfs                    /var/cache/pacman/pkg"
+	"tmpfs /var/log tmpfs defaults,noatime,mode=0755,size=100M 0 0"
+	"tmpfs /var/tmp tmpfs defaults,noatime,size=500M 0 0"
+	"tmpfs /tmp tmpfs defaults,noatime,size=1G 0 0"
+	"tmpfs /var/cache/pacman/pkg tmpfs defaults,noatime,size=2G 0 0"
 )
 
 
@@ -143,13 +143,15 @@ echo "#############################"
 echo ""
 
 
-for line in "${fstab[@]}"; do 
-	path=($line)
+for line in "${fstab[@]}"; do
+	mountpoint="$(awk '{print $2}' <<< "$line")"
 
-	if grep -q "$line" /etc/fstab ;then
-		blue ${path[1]}
+	if grep -qE "[[:space:]]${mountpoint}[[:space:]]" /etc/fstab; then
+		blue "$mountpoint"
+	elif echo "$line" | sudo tee -a /etc/fstab >/dev/null; then
+		pass "added $mountpoint"
 	else
-		echo "adding to file";
+		fail "added $mountpoint"
 	fi
 done
 
