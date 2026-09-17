@@ -11,6 +11,7 @@ packages=(
 	i3lock
 	dmenu
 	picom
+	feh
 	alacritty     # terminal emulator
 	neovim        # text editor
 	qutebrowser   # web browser
@@ -34,6 +35,16 @@ fstab=(
 
 
 
+header(){
+
+
+	echo ""
+	echo "#############################"
+	echo "$1"
+	echo "#############################"
+	echo ""
+
+}
 
 blue(){
 	echo -e "\033[0;34mPASS:\033[0m $1"
@@ -54,20 +65,39 @@ cd ~
 pwd 
 
 
-echo ""
-echo "#############################"
-echo "UPDATE REPOS"
-echo "#############################"
-echo ""
+#
+# Update Repos 
+#
 
-sudo pacman -Sy
+header "UPDATE REPOS"
 
-echo ""
-echo "#############################"
-echo "INSTALL PACKAGES"
-echo "#############################"
-echo ""
+repo_before=$(
+    sudo sha256sum /var/lib/pacman/sync/*.db 2>/dev/null | sort
+)
 
+if ! sudo pacman -Sy &>/dev/null; then
+    fail "update Arch repos"
+else
+    repo_after=$(
+        sudo sha256sum /var/lib/pacman/sync/*.db 2>/dev/null | sort
+    )
+
+    if [[ "$repo_before" == "$repo_after" ]]; then
+        blue "arch repos current"
+    else
+        pass "update arch repos"
+    fi
+fi
+
+
+
+
+
+#
+# Update Repos 
+#
+
+header "INSTALL PACKAGES"
 
 
 for pkg in "${packages[@]}"; do 
@@ -130,4 +160,21 @@ fi
 
 
 
+
+
+# Install AUR YAY 
+
+header "Install AUR"
+
+if ! yay &> /dev/null ; then 
+
+	if ! ` sudo pacman -S  --noconfirm --needed base-devel git go &> /dev/null && git clone https://aur.archlinux.org/yay.git && cd yay && makepkg -si ` ; then 
+		fail "Install yay"
+	else
+	
+		pass "Install yay"
+	fi
+else 
+	blue "Install yay"
+fi
 
