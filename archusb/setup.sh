@@ -24,6 +24,7 @@ packages=(
 	ntfs-3g       # ntfs fs compatibility
 	exfat-utils   # exfat fs compatibility
 	zsh           # default shell
+	unclutter     # hide idle mouse cursor
 )
 
 
