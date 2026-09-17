@@ -61,70 +61,6 @@ fail(){
 }
 
 
-# Install prebuilt yay when AUR git / Go module fetch fails (common connection refused).
-install_yay(){
-	local yay_build arch ver tarball extract
-
-	# Go (and some helpers) read /etc/resolv.conf directly; stub link fixes [::1]:53 refused.
-	if [ -f /run/systemd/resolve/stub-resolv.conf ] && [ ! -L /etc/resolv.conf ]; then
-		sudo ln -sf /run/systemd/resolve/stub-resolv.conf /etc/resolv.conf || true
-	fi
-
-	if ! sudo pacman -S --noconfirm --needed base-devel git curl &>/dev/null; then
-		return 1
-	fi
-
-	yay_build="$(mktemp -d)"
-
-	# 1) Prefer yay-bin from AUR snapshot over git clone (HTTPS, no Go compile)
-	if curl -fsSL "https://aur.archlinux.org/cgit/aur.git/snapshot/yay-bin.tar.gz" \
-		| tar -xz -C "$yay_build" \
-		&& (cd "$yay_build/yay-bin" && makepkg -si --noconfirm); then
-		rm -rf "$yay_build"
-		return 0
-	fi
-
-	# 2) Fallback: AUR git clone of yay-bin
-	rm -rf "$yay_build"
-	yay_build="$(mktemp -d)"
-	if git clone --depth 1 https://aur.archlinux.org/yay-bin.git "$yay_build/yay-bin" \
-		&& (cd "$yay_build/yay-bin" && makepkg -si --noconfirm); then
-		rm -rf "$yay_build"
-		return 0
-	fi
-
-	# 3) Last resort: official GitHub release binary (no AUR at all)
-	rm -rf "$yay_build"
-	yay_build="$(mktemp -d)"
-	arch="$(uname -m)"
-	case "$arch" in
-		x86_64|aarch64) ;;
-		armv7l) arch="armv7h" ;;
-		*) rm -rf "$yay_build"; return 1 ;;
-	esac
-
-	ver="$(curl -fsSL https://api.github.com/repos/Jguer/yay/releases/latest \
-		| sed -n 's/.*"tag_name": "v\([^"]*\)".*/\1/p' | head -1)"
-	if [ -z "$ver" ]; then
-		rm -rf "$yay_build"
-		return 1
-	fi
-
-	tarball="yay_${ver}_${arch}.tar.gz"
-	if curl -fsSL "https://github.com/Jguer/yay/releases/download/v${ver}/${tarball}" \
-		| tar -xz -C "$yay_build"; then
-		extract="$yay_build/yay_${ver}_${arch}"
-		if [ -x "$extract/yay" ] && sudo install -Dm755 "$extract/yay" /usr/bin/yay; then
-			rm -rf "$yay_build"
-			return 0
-		fi
-	fi
-
-	rm -rf "$yay_build"
-	return 1
-}
-
-
 
 cd ~
 
@@ -248,14 +184,20 @@ fi
 
 
 
-# Install AUR YAY 
+# Install AUR helper (yay-bin avoids Go compile / connection refused)
 
 header "Install AUR"
 
 if command -v yay &>/dev/null; then
 	blue "yay"
-elif install_yay; then
-	pass "Install yay"
 else
-	fail "Install yay"
+	yay_build="$(mktemp -d)"
+	if sudo pacman -S --noconfirm --needed base-devel git &>/dev/null \
+		&& git clone --depth 1 https://aur.archlinux.org/yay-bin.git "$yay_build" \
+		&& (cd "$yay_build" && makepkg -si --noconfirm); then
+		pass "Install yay"
+	else
+		fail "Install yay"
+	fi
+	rm -rf "$yay_build"
 fi
