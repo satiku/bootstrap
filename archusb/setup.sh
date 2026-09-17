@@ -25,6 +25,7 @@ packages=(
 	exfat-utils   # exfat fs compatibility
 	zsh           # default shell
 	unclutter     # hide idle mouse cursor
+	yadm          # dotfile manager
 )
 
 
