@@ -97,7 +97,7 @@ fi
 
 
 #
-# Update Repos 
+# Install packages
 #
 
 header "INSTALL PACKAGES"
@@ -112,6 +112,27 @@ for pkg in "${packages[@]}"; do
 		pass $pkg
 	fi
 	done 
+
+
+
+
+# Install AUR helper before later steps that may need it (yay-bin avoids Go compile)
+
+header "Install AUR"
+
+if command -v yay &>/dev/null; then
+	blue "yay"
+else
+	yay_build="$(mktemp -d)"
+	if sudo pacman -S --noconfirm --needed base-devel git &>/dev/null \
+		&& git clone --depth 1 https://aur.archlinux.org/yay-bin.git "$yay_build" \
+		&& (cd "$yay_build" && makepkg -si --noconfirm); then
+		pass "Install yay"
+	else
+		fail "Install yay"
+	fi
+	rm -rf "$yay_build"
+fi
 
 
 
@@ -167,25 +188,4 @@ if [ "$(yadm rev-list HEAD..@{u} --count)" -gt 0 ] ;then
 	fi
 else 
 	blue "yadm repo current"
-fi
-
-
-
-
-# Install AUR helper (yay-bin avoids Go compile / connection refused)
-
-header "Install AUR"
-
-if command -v yay &>/dev/null; then
-	blue "yay"
-else
-	yay_build="$(mktemp -d)"
-	if sudo pacman -S --noconfirm --needed base-devel git &>/dev/null \
-		&& git clone --depth 1 https://aur.archlinux.org/yay-bin.git "$yay_build" \
-		&& (cd "$yay_build" && makepkg -si --noconfirm); then
-		pass "Install yay"
-	else
-		fail "Install yay"
-	fi
-	rm -rf "$yay_build"
 fi
