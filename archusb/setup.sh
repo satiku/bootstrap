@@ -116,11 +116,7 @@ for pkg in "${packages[@]}"; do
 
 
 
-echo ""
-echo "#############################"
-echo "SET DEFAULT SHELL"
-echo "#############################"
-echo ""
+header "SET DEFAULT SHELL"
 
 zsh_path="$(command -v zsh)"
 if [ -n "$zsh_path" ]; then
@@ -137,12 +133,7 @@ else
 fi
 
 
-echo ""
-echo "#############################"
-echo "Check temp mounts"
-echo "#############################"
-echo ""
-
+header "Check temp mounts"
 
 for line in "${fstab[@]}"; do
 	mountpoint="$(awk '{print $2}' <<< "$line")"
@@ -157,13 +148,7 @@ for line in "${fstab[@]}"; do
 done
 
 
-
-echo ""
-echo "#############################"
-echo "Check dot files"
-echo "#############################"
-echo ""
-
+header "Check dot files"
 
 if [ -d ~/.local/share/yadm/repo.git ];then 
 	blue "yadm repo exists"
