@@ -1,6 +1,6 @@
 #!/bin/bash
 
-dotfile="yadm clone git@github.com:satiku/dotfiles.git"
+dotfile="git@github.com:satiku/dotfiles.git"
 
 packages=(
 	xorg-server
@@ -18,21 +18,22 @@ packages=(
 	mpv           # media player
 	btop          # resource monitor
 	yazi          # file manager
-	ueberzugpp    # yazi 
-	poppler       # yazi 
+	ueberzugpp    # yazi
+	poppler       # yazi
 	p7zip         # yazi
 	ntfs-3g       # ntfs fs compatibility
 	exfat-utils   # exfat fs compatibility
 	zsh           # default shell
 	unclutter     # hide idle mouse cursor
+	yadm          # dotfile manager
 )
 
 
 fstab=(
-	"tmpfs                    /var/log"
-	"tmpfs                    /var/tmp"
-	"tmpfs                    /tmp"
-	"tmpfs                    /var/cache/pacman/pkg"
+	"tmpfs /var/log tmpfs defaults,noatime,mode=0755,size=100M 0 0"
+	"tmpfs /var/tmp tmpfs defaults,noatime,size=500M 0 0"
+	"tmpfs /tmp tmpfs defaults,noatime,size=1G 0 0"
+	"tmpfs /var/cache/pacman/pkg tmpfs defaults,noatime,size=2G 0 0"
 )
 
 
@@ -64,11 +65,11 @@ fail(){
 
 cd ~
 
-pwd 
+pwd
 
 
 #
-# Update Repos 
+# Update Repos
 #
 
 header "UPDATE REPOS"
@@ -96,30 +97,47 @@ fi
 
 
 #
-# Update Repos 
+# Install packages
 #
 
 header "INSTALL PACKAGES"
 
 
-for pkg in "${packages[@]}"; do 
-	if sudo pacman -Q "$pkg" &>/dev/null; then 
-		blue $pkg
-	elif ! sudo pacman -S --noconfirm  --needed "$pkg" >/dev/null; then 
-		fail $pkg
+for pkg in "${packages[@]}"; do
+	if sudo pacman -Q "$pkg" &>/dev/null; then
+		blue "$pkg"
+	elif ! sudo pacman -S --noconfirm --needed "$pkg" >/dev/null; then
+		fail "$pkg"
 	else
-		pass $pkg
+		pass "$pkg"
 	fi
-	done 
+done
 
 
 
 
-echo ""
-echo "#############################"
-echo "SET DEFAULT SHELL"
-echo "#############################"
-echo ""
+# Install AUR helper before anything that may need it (yay-bin avoids Go compile)
+
+header "Install AUR"
+
+if command -v yay &>/dev/null; then
+	blue "yay"
+else
+	yay_build="$(mktemp -d)"
+	if sudo pacman -S --noconfirm --needed base-devel git &>/dev/null \
+		&& git clone --depth 1 https://aur.archlinux.org/yay-bin.git "$yay_build" \
+		&& (cd "$yay_build" && makepkg -si --noconfirm); then
+		pass "Install yay"
+	else
+		fail "Install yay"
+	fi
+	rm -rf "$yay_build"
+fi
+
+
+
+
+header "SET DEFAULT SHELL"
 
 zsh_path="$(command -v zsh)"
 if [ -n "$zsh_path" ]; then
@@ -136,68 +154,35 @@ else
 fi
 
 
-echo ""
-echo "#############################"
-echo "Check temp mounts"
-echo "#############################"
-echo ""
+header "Check temp mounts"
 
+for line in "${fstab[@]}"; do
+	mountpoint="$(awk '{print $2}' <<< "$line")"
 
-for line in "${fstab[@]}"; do 
-	path=($line)
-
-	if grep -q "$line" /etc/fstab ;then
-		blue ${path[1]}
+	if grep -qE "[[:space:]]${mountpoint}[[:space:]]" /etc/fstab; then
+		blue "$mountpoint"
+	elif echo "$line" | sudo tee -a /etc/fstab >/dev/null; then
+		pass "added $mountpoint"
 	else
-		echo "adding to file";
+		fail "added $mountpoint"
 	fi
 done
 
 
+header "Check dot files"
 
-echo ""
-echo "#############################"
-echo "Check dot files"
-echo "#############################"
-echo ""
-
-
-if [ -d ~/.local/share/yadm/repo.git ];then 
+if [ -d ~/.local/share/yadm/repo.git ]; then
 	blue "yadm repo exists"
-
 else
-	yadm clone $dotfile
+	yadm clone "$dotfile"
 fi
 
+yadm fetch
 
-
-yadm fetch 
-
-if [ "$(yadm rev-list HEAD..@{u} --count)" -gt 0 ] ;then 
-	if yadm pull ; then 
+if [ "$(yadm rev-list HEAD..@{u} --count)" -gt 0 ]; then
+	if yadm pull; then
 		pass "yadm repo updated"
 	fi
-else 
-	blue "yadm repo current"
-fi
-
-
-
-
-# Install AUR helper (yay-bin avoids Go compile / connection refused)
-
-header "Install AUR"
-
-if command -v yay &>/dev/null; then
-	blue "yay"
 else
-	yay_build="$(mktemp -d)"
-	if sudo pacman -S --noconfirm --needed base-devel git &>/dev/null \
-		&& git clone --depth 1 https://aur.archlinux.org/yay-bin.git "$yay_build" \
-		&& (cd "$yay_build" && makepkg -si --noconfirm); then
-		pass "Install yay"
-	else
-		fail "Install yay"
-	fi
-	rm -rf "$yay_build"
+	blue "yadm repo current"
 fi
