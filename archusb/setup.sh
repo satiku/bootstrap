@@ -1,6 +1,6 @@
 #!/bin/bash
 
-dotfile="yadm clone git@github.com:satiku/dotfiles.git"
+dotfile="git@github.com:satiku/dotfiles.git"
 
 packages=(
 	xorg-server
@@ -166,7 +166,7 @@ if [ -d ~/.local/share/yadm/repo.git ];then
 	blue "yadm repo exists"
 
 else
-	yadm clone $dotfile
+	yadm clone "$dotfile"
 fi
 
 
