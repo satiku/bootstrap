@@ -28,6 +28,10 @@ packages=(
 	yadm          # dotfile manager
 )
 
+aur_packages=(
+	zsh-theme-powerlevel10k
+)
+
 
 fstab=(
 	"tmpfs                    /var/log"
@@ -133,6 +137,19 @@ else
 	fi
 	rm -rf "$yay_build"
 fi
+
+
+header "INSTALL AUR PACKAGES"
+
+for pkg in "${aur_packages[@]}"; do
+	if pacman -Q "$pkg" &>/dev/null; then
+		blue "$pkg"
+	elif ! yay -S --noconfirm --needed "$pkg" >/dev/null; then
+		fail "$pkg"
+	else
+		pass "$pkg"
+	fi
+done
 
 
 
